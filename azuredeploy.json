@@ -1,0 +1,154 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "String",
+			"defaultValue": "eastus"
+        },
+        "storageAccountName": {
+            "type": "String",
+			"defaultValue": "pb072721new"
+        },
+        "accountType": {
+            "type": "String",
+			"defaultValue": "Standard_RAGRS"
+        },
+        "kind": {
+            "type": "String",
+			"defaultValue": "StorageV2"
+        },
+        "accessTier": {
+            "type": "String",
+			"defaultValue": "Hot"
+        },
+        "minimumTlsVersion": {
+            "type": "String",
+			"defaultValue": "TLS1_2"
+        },
+        "supportsHttpsTrafficOnly": {
+            "type": "Bool",
+			"defaultValue": true
+        },
+        "allowBlobPublicAccess": {
+            "type": "Bool",
+			"defaultValue": true
+        },
+        "allowSharedKeyAccess": {
+            "type": "Bool",
+			"defaultValue": true
+        },
+        "networkAclsBypass": {
+            "type": "String",
+			"defaultValue": "AzureServices"
+        },
+        "networkAclsDefaultAction": {
+            "type": "String",
+			"defaultValue": "Allow"
+        },
+        "isContainerRestoreEnabled": {
+            "type": "Bool",
+			"defaultValue": false
+        },
+        "isBlobSoftDeleteEnabled": {
+            "type": "Bool",
+			"defaultValue": true
+        },
+        "blobSoftDeleteRetentionDays": {
+            "type": "Int",
+			"defaultValue": 7
+        },
+        "isContainerSoftDeleteEnabled": {
+            "type": "Bool",
+			"defaultValue": true
+        },
+        "containerSoftDeleteRetentionDays": {
+            "type": "Int",
+			"defaultValue": 7
+        },
+        "changeFeed": {
+            "type": "Bool",
+			"defaultValue": false
+        },
+        "isVersioningEnabled": {
+            "type": "Bool",
+			"defaultValue": false
+        },
+        "isShareSoftDeleteEnabled": {
+            "type": "Bool",
+			"defaultValue": true
+        },
+        "shareSoftDeleteRetentionDays": {
+            "type": "Int",
+			"defaultValue": 7
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-02-01",
+            "name": "[parameters('storageAccountName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [],
+            "tags": {},
+            "sku": {
+                "name": "[parameters('accountType')]"
+            },
+            "kind": "[parameters('kind')]",
+            "properties": {
+                "accessTier": "[parameters('accessTier')]",
+                "minimumTlsVersion": "[parameters('minimumTlsVersion')]",
+                "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]",
+                "allowBlobPublicAccess": "[parameters('allowBlobPublicAccess')]",
+                "allowSharedKeyAccess": "[parameters('allowSharedKeyAccess')]",
+                "networkAcls": {
+                    "bypass": "[parameters('networkAclsBypass')]",
+                    "defaultAction": "[parameters('networkAclsDefaultAction')]",
+                    "ipRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2021-02-01",
+            "name": "[concat(parameters('storageAccountName'), '/default')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+            ],
+            "properties": {
+                "restorePolicy": {
+                    "enabled": "[parameters('isContainerRestoreEnabled')]"
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": "[parameters('isBlobSoftDeleteEnabled')]",
+                    "days": "[parameters('blobSoftDeleteRetentionDays')]"
+                },
+                "containerDeleteRetentionPolicy": {
+                    "enabled": "[parameters('isContainerSoftDeleteEnabled')]",
+                    "days": "[parameters('containerSoftDeleteRetentionDays')]"
+                },
+                "changeFeed": {
+                    "enabled": "[parameters('changeFeed')]"
+                },
+                "isVersioningEnabled": "[parameters('isVersioningEnabled')]"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileservices",
+            "apiVersion": "2021-02-01",
+            "name": "[concat(parameters('storageAccountName'), '/default')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]",
+                "[concat(concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName')), '/blobServices/default')]"
+            ],
+            "properties": {
+                "shareDeleteRetentionPolicy": {
+                    "enabled": "[parameters('isShareSoftDeleteEnabled')]",
+                    "days": "[parameters('shareSoftDeleteRetentionDays')]"
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}
